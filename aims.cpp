@@ -389,9 +389,14 @@ class User
     }
     void view_cmd(int stat){
         dump_section(aims + "commands", to_string(stat));
+        if(stat != -1)
+            dump_section(aims + "commands", "-1");
     }
 
-    
+    void multiplexer(string command)
+    {
+        cout << "No poly" << endl;
+    }
 };
 
 class Student : public User
@@ -411,27 +416,67 @@ class Student : public User
         get_value("Data", "Current semester", aims + "Students/" + in_id, dummy);
         this->current_sem = stoi(dummy);
     }
+
+    void multiplexer(string line)
+    {
+            if(line == "rg"){
+                reg_course();
+                return;
+            }
+
+            if(line == "drg"){
+                dereg_course();
+                return;
+            }
+
+            if(line == "vc"){
+                view_all_courses();
+                return;
+            }
+
+            if(line == "vg"){
+                view_grade();
+                return;
+            }
+    }
     
 };
 
 class Faculty : public User
 {
-    public:
     void view_students_in_course(); //prints all students registered to the given course
     void view_courses(); //prints all owned courses
     void assign_grade(); //grades a given student for the given course.
 
+    public:
     Faculty(string &in_id)
     {
         this->id = in_id;
         get_value("Data", "Name", aims + "Faculty/" + in_id, this->name);
         get_value("Data", "Email ID", aims + "Faculty/" + in_id, this->email);
     }
+
+    void multiplexer(string line)
+    {
+            if(line == "vc"){
+                view_courses();
+                return;
+            }
+
+            if(line == "vsc"){
+                view_students_in_course();
+                return;
+            }
+
+            if(line == "ag"){
+                assign_grade();
+                return;
+            }
+    }
 };
 
 class Admin : public User
 {
-    public:
     void create_student(); //prints error if student already exists
     void remove_student(); //prints error if no such student exists
     void remove_student_from_course(); //accepts student and course id as input
@@ -448,12 +493,79 @@ class Admin : public User
     void remove_faculty_courses();
     void view_faculty();
 
+    public:
     Admin()
     {
         this->id = "0";
         get_value("Data", "Name", aims + "admin", this->name);
         get_value("Data", "Email", aims + "admin", this->email);
     }
+
+
+    void multiplexer(string line)
+    {
+        
+            if(line == "crs"){
+                create_student();
+                return;
+            }
+            if(line == "crf"){
+                create_faculty();
+                return;
+            }
+            if(line == "vc"){
+                view_courses();
+                return;
+            }
+            if(line == "vs"){
+                view_students();
+                return;
+            }
+            if(line == "vf"){
+                view_faculty();
+                return;
+            }
+            if(line == "crc"){
+                create_course();
+                return;
+            }
+
+            if(line == "ref"){
+                remove_faculty();
+                return;
+            }
+
+            if(line == "res"){
+                remove_student();
+                return;
+            }
+
+            if(line == "rec"){
+                remove_course();
+                return;
+            }
+
+            if(line == "asc"){
+                add_student_to_course();
+                return;
+            }
+
+            if(line == "rsc"){
+                remove_student_from_course();
+                return;
+            }
+
+            if(line == "afc"){
+                add_faculty_courses();
+                return;
+            }
+
+            if(line == "rfc"){
+                remove_faculty_courses();
+                return;
+            }
+    }
+
 };
 
 int login(string &in_uname)
@@ -524,7 +636,7 @@ void Admin :: create_student()
         cout << "Already exists." << endl;
         return;
     }
-    add_key("", student_id, aims + "Students/list", "");
+    
     
     cout << "Enter student name." << endl;
 
@@ -544,6 +656,7 @@ void Admin :: create_student()
     cout << "Enter current semester." << endl;
     cin >> tmp;
     new_f << "> Current semester : " << tmp << endl;
+    add_key(tmp, student_id, aims + "Students/list", "");
 
     cout << "Enter mail address." << endl;
     cin >> tmp;
@@ -868,8 +981,12 @@ void Admin :: view_faculty()
 
 void Admin :: view_students()
 {
-    dump_section(aims + "Students/list", "");
-    //system("ls ./aims_directory/Students");
+    cout << "Enter semester." << endl;
+    string sem;
+    cin >> sem;
+    if(sem == "all") dump_file(aims + "Students/list");
+        
+    else dump_section(aims + "Students/list", sem);
 }
 
 void Student :: reg_course()
@@ -1011,25 +1128,30 @@ int main()
     bool logg = false;
     string line;
     User * current_user;
-    int usr_stat = 3;
+    int usr_stat = -1;
     string in_id;
     cout << "Welcome. Enter \"login\" to continue." << endl;
 
     while(cout << "\n\n>>> " && cin >> line){
-
+        //termination command
         if(line == "exit"){
             delete current_user;
             return 0;
         }
 
-        cout << "Processing command..." << line << endl;
         cout << "\n\n";
+
+        //command overview
+        if(line == "help"){
+            current_user->view_cmd(usr_stat);
+            continue;
+        }
+
         //checks for login-logout status
         if(!logg && line != "login"){
             cout << "No user logged in. Cannot act. Enter command : login." << endl;
             continue;
         }
-
         if(logg && line == "login"){
             cout << "Other user logged in. Do you wish to log out? \n y / n" << endl;
 
@@ -1058,8 +1180,9 @@ int main()
                 case 2 :
                     current_user = new Student(in_id);
                     break;
+                default : return 1;
             }
-            cout << "Done." << endl;
+            //cout << "Done." << endl;
             continue;
         }
 
@@ -1071,16 +1194,11 @@ int main()
             continue;
         }
 
+        //changing password
         if(line == "ch"){
             current_user->set_password();
             continue;
         }
-
-        if(line == "help"){
-            current_user->view_cmd(usr_stat);
-            continue;
-        }
-
 
         //checks for existence of commands
         string cmd;
@@ -1101,110 +1219,18 @@ int main()
 
         
         //function call multiplexer
-        if(usr_stat == 0){
-            if(line == "crs"){
-                ((Admin *) current_user)->create_student();
-                continue;
+            switch(usr_stat){
+                case 1 : 
+                    ((Faculty *)current_user)->multiplexer(line);
+                    break;
+                case 0 :
+                    ((Admin *)current_user)->multiplexer(line);
+                    break;
+                case 2 :
+                    ((Student *)current_user)->multiplexer(line);
+                    break;
+                default : return 1;
             }
-            if(line == "crf"){
-                ((Admin *) current_user)->create_faculty();
-                continue;
-            }
-            if(line == "vc"){
-                ((Admin *) current_user)->view_courses();
-                continue;
-            }
-            if(line == "vs"){
-                ((Admin *) current_user)->view_students();
-                continue;
-            }
-            if(line == "vf"){
-                ((Admin *) current_user)->view_faculty();
-                continue;
-            }
-            if(line == "crc"){
-                ((Admin *) current_user)->create_course();
-                continue;
-            }
-
-            if(line == "ref"){
-                ((Admin *) current_user)->remove_faculty();
-                continue;
-            }
-
-            if(line == "res"){
-                ((Admin *) current_user)->remove_student();
-                continue;
-            }
-
-            if(line == "rec" || cmd == "rec"){
-                ((Admin *) current_user)->remove_course();
-                continue;
-            }
-
-            if(line == "asc" || cmd == "asc"){
-                ((Admin *) current_user)->add_student_to_course();
-                continue;
-            }
-
-            if(line == "rsc" || cmd == "rsc"){
-                ((Admin *) current_user)->remove_student_from_course();
-                continue;
-            }
-
-            if(line == "afc" || cmd == "afc"){
-                ((Admin *) current_user)->add_faculty_courses();
-                continue;
-            }
-
-            if(line == "rfc" || cmd == "rfc"){
-                ((Admin *) current_user)->remove_faculty_courses();
-                continue;
-            }
-
-
-
-        }
-
-        if(usr_stat == 1){
-
-            if(line == "vc"){
-                ((Faculty *) current_user)->view_courses();
-                continue;
-            }
-
-            if(line == "vsc"){
-                ((Faculty *) current_user)->view_students_in_course();
-                continue;
-            }
-
-            if(line == "ag"){
-                ((Faculty *) current_user)->assign_grade();
-                continue;
-            }
-        }
-
-        if(usr_stat == 2){
-            if(line == "rg"){
-                ((Student *) current_user)->reg_course();
-                continue;
-            }
-
-            if(line == "drg"){
-                ((Student *) current_user)->dereg_course();
-                continue;
-            }
-
-            if(line == "vc"){
-                ((Student *) current_user)->view_all_courses();
-                continue;
-            }
-
-            if(line == "vg"){
-                ((Student *) current_user)->view_grade();
-                continue;
-            }
-        }
     
     }
 }
