@@ -1,3 +1,9 @@
+[-1]
+> login : Logging in to user. Requires username and password from cin.
+> help : Display commands.
+> logout : Log out of current user. Requires prior login.
+> ch : change current user's password. Requires logged in user.
+> exit : terminates program.
 [0]
 > crs : create_student 
 > res : remove_student
