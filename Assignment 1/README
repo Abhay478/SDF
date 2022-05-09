@@ -1,0 +1,7 @@
+The entire directory is necessary for program execution. All paths within the code (aims.cpp) are relative.
+Only one actor is allowed to function at any given time, but the 'logout' and 'login' commands canbe used to switch actors.
+All names (except the courses in semester 2) are purely imaginary, and surely do not correspond to any names in real life.
+Command prompt : >>>
+
+Name : Abhay Shankar K 
+Roll : cs21btech11001
