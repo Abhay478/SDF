@@ -594,7 +594,7 @@ int login(string &in_uname)
     }
 
     switch(in_uname[0]){
-        case '0' : return 0;
+        case 'a' : return 0;
         case 'f' : return 1;
         case 's' : return 2;
         default : return -1;
