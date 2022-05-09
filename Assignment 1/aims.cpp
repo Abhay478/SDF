@@ -86,7 +86,7 @@ int set_value(string section, string key, string fname, string value = "", bool 
         f_out << line << endl;
     }
 
-    if(line[0] == '['){
+    if(line[0] == '[' || f.eof()){
         while(getline(f, line))
             f_out << line << endl;
         rename("./temp", fname.c_str());
@@ -644,6 +644,11 @@ void Admin :: create_student()
     ofstream new_f;
     new_f.open(new_fname);
 
+    if(!new_f){
+        cout << "File creation error. Try again." << endl;
+        return;
+    }
+
     string tmp;
     string name;
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -674,6 +679,10 @@ void Admin :: remove_student()
     string key;
     cin >> key;
 
+    cout << "Enter current semester." << endl;
+    string sem;
+    cin >> sem;
+
     if(key.find("s_") != 0){
         key.insert(0, "s_");
     }
@@ -685,7 +694,12 @@ void Admin :: remove_student()
         return;
     }
 
-    set_value("", key, aims + "Students/list", "", 1);
+    status = set_value(sem, key, aims + "Students/list", "", 1);
+
+    if(status == 1){
+        cout << "No such student.";
+        return;
+    }
 
     string fname = aims + "Students/" + key;
     remove(fname.c_str());
@@ -719,6 +733,11 @@ void Admin :: create_faculty()
     string new_fname = aims + "Faculty/" + fac_id;
     ofstream new_f;
     new_f.open(new_fname);
+
+    if(!new_f){
+        cout << "File creation error. Try again." << endl;
+        return;
+    }
 
     string name;
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -760,6 +779,8 @@ void Admin :: remove_faculty()
 
     string fname = aims + "Faculty/" + key;
     remove(fname.c_str());
+
+    cout << "Removed." << endl;
 }
 
 void Admin :: create_course()
@@ -786,6 +807,11 @@ void Admin :: create_course()
     }
     add_key(sem, id, aims + "Courses/list", name);
     f.open(aims + "Courses/" + sem + "/" + id, ios_base::out);
+
+    if(!f){
+        cout << "File creation error. Try again." << endl;
+        return;
+    }
 
     f << "[Data]" << endl;
     f << "> Name : " + name << endl;
@@ -835,6 +861,7 @@ void Admin :: remove_course()
     
     remove(out.c_str());
 
+    cout << "Removed." << endl;
 }
 
 void Admin :: remove_student_from_course()
@@ -1199,7 +1226,7 @@ int main()
         if(line == "logout"){
             delete current_user;
             logg = false;
-            usr_stat = 3;
+            usr_stat = -1;
             continue;
         }
 
@@ -1233,7 +1260,7 @@ int main()
         }
 
         
-        //function call multiplexer
+        //function call multiplexer - Actual command execution.
         current_user->multiplexer(line);
     
     }
