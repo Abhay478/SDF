@@ -3,7 +3,7 @@ All paths within the code (aims.cpp) are relative.
 Only one actor is allowed to function at any given time, but the 'logout' and 'login' commands can be used to switch actors.
 All names (except the courses in semester 2) are purely imaginary, and surely do not correspond to any names in real life.
 The usernames and passwords of all twenty-six actors are given in pass.txt. 
-The admin username is "0". 
+The admin username is "admin". 
 pass.txt cannot be accessed from the CLI.
 Command prompt : >>>
 
