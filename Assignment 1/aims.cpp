@@ -1066,7 +1066,7 @@ void Student :: dereg_course()
     cin >> cr_id;
 
     string tmp;
-    if(get_value("Courses", cr_id, aims + "Student/" + id, tmp) == 1){
+    if(get_value("Courses", cr_id, aims + "Students/" + id, tmp) == 1){
         cout << "No such course registered.";
         return;
     }
@@ -1076,7 +1076,7 @@ void Student :: dereg_course()
         return;
     }
 
-    set_value("Courses", cr_id, aims + "Student/" + id, "", 1);
+    set_value("Courses", cr_id, aims + "Students/" + id, "", 1);
 
     set_value("Students", id, aims + "Courses/" + to_string(current_sem) + "/" + cr_id, "", 1);
 } 
