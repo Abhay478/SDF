@@ -8,7 +8,7 @@
 #include <filesystem>
 using namespace std;
 
-
+//return scheme : [-2 for File not found, -1 for section not found, 1 for key not found.], [true for ]
 int get_value(string section, string key, string fname, string &out_buf)
 {
     fstream f;
@@ -18,7 +18,7 @@ int get_value(string section, string key, string fname, string &out_buf)
 
     string line;
     while(getline(f, line)){
-        if(line.find(section) != string::npos)
+        if(line.find("[" + section + "]") != string::npos)
             break;
     }
     
@@ -27,11 +27,10 @@ int get_value(string section, string key, string fname, string &out_buf)
         return -1;
     }
 
-    size_t x;
     while(getline(f, line)){
         if(line[0] == '[') break;
-        if((x = line.find(key)) != string::npos){
-            out_buf = line.substr(x + key.size() + 3, line.size() - (x + key.size() + 3));
+        if(line.find("> " + key + " : ") != string::npos){
+            out_buf = line.substr(key.size() + 5, line.size() - (key.size() + 5));
             f.close();
             return 0;
         }
@@ -70,16 +69,14 @@ int set_value(string section, string key, string fname, string value = "", bool 
         return -1;
     }
 
-    size_t x;
-
     while(getline(f, line)){
         if(line[0] == '[') {
             f_out << line << endl;
             break;
         }
-        if((x = line.find(key)) != string::npos){
+        if(line.find("> " + key + " : ") != string::npos){
             if(rem_key) break;
-            line.replace(x + key.size() + 3, line.size() - (x + key.size() + 3), value);
+            line.replace(key.size() + 5, line.size() - (key.size() + 5), value);
             f_out << line << endl;
             break;
         }
@@ -132,7 +129,7 @@ int add_key(string section, string key, string fname, string value){
         getline(f, line);
         //cout << line;
         f_out << line << endl;
-        if(line.find("> " + key) != string::npos){
+        if(line.find("> " + key + " : ") != string::npos){
             while(getline(f, line))
                 f_out << line << endl;
 
@@ -154,22 +151,24 @@ int add_key(string section, string key, string fname, string value){
     return 0;
 }
 
-bool add_section(string section, string fname)
+int add_section(string section, string fname)
 {
     fstream f;
     f.open(fname);
 
+    if(!f) return -2;
+
     ofstream f_out;
     f_out.open("./temp");
 
-    bool ins = true;
+    int ins = 0;
     string line;
     while(getline(f, line)){
         f_out << line << endl;
         if(line.find("[" + section + "]") != string::npos)
-            ins = false;
+            ins = 1;
     }
-    if(ins) f_out << '[' << section << ']' << endl;
+    if(ins == 0) f_out << '[' << section << ']' << endl;
 
     rename("./temp", fname.c_str());
     f.close();
@@ -177,22 +176,24 @@ bool add_section(string section, string fname)
     return ins;
 }
 
-bool rem_section(string section, string fname)
+int rem_section(string section, string fname)
 {
     fstream f;
     f.open(fname, ios_base::in);
+
+    if(!f) return -2;
 
     ofstream f_out;
     f_out.open("./temp");
 
     string line;
     bool copy = true;
-    bool out;
+    int out = 0;
     while(getline(f, line)){
         if(line[0] == '[') copy = true;
         if(line.find("[" + section + "]") != string::npos){
             copy = false;
-            out = false;
+            out = 1;
         }
         if(copy) f_out << line << endl;
     }
@@ -227,26 +228,28 @@ bool dump_file(string fname)
     return true;
 }
 
-bool dump_keys(vector <string> &out, string section, string fname)
+int get_all_keys(vector <string> &out, string section, string fname)
 {
     fstream f;
     f.open(fname);
 
+    if(!f) return -2;
+
     string line;
     while(getline(f, line))
-        if(line.find(section) != string::npos)
+        if(line.find("[" + section + "]") != string::npos)
             break;
     
     if(f.eof()){
         f.close();
-        return false;
+        return -1;
     }
     
     while(getline(f, line) && line[0] == '>')
         out.push_back(line.substr(1, line.find(" :") - 1));
     
     f.close();
-    return true;
+    return 0;
 }
 
 bool dump_section(string fname, string section)
@@ -290,7 +293,7 @@ int get_key(string section, string &key, string fname, string value)
 
     string line;
     while(getline(f, line)){
-        if(line.find(section) != string::npos)
+        if(line.find("[" + section + "]") != string::npos)
             break;
     }
     
@@ -387,6 +390,7 @@ class User
         set_value("Passwords", id, aims + "pass.txt", new_p);
         cout << "Changed." << endl;
     }
+    
     void view_cmd(int stat){
         dump_section(aims + "commands", to_string(stat));
         if(stat != -1)
@@ -419,25 +423,30 @@ class Student : public User
 
     void multiplexer(string line)
     {
-            if(line == "rg"){
-                reg_course();
-                return;
-            }
+        if(line == "data"){
+            dump_section(aims + "Students/" + id, "Data");
+            return;
+        }
 
-            if(line == "drg"){
-                dereg_course();
-                return;
-            }
+        if(line == "rg"){
+            reg_course();
+            return;
+        }
 
-            if(line == "vc"){
-                view_all_courses();
-                return;
-            }
+        if(line == "drg"){
+            dereg_course();
+            return;
+        }
 
-            if(line == "vg"){
-                view_grade();
-                return;
-            }
+        if(line == "vc"){
+            view_all_courses();
+            return;
+        }
+
+        if(line == "vg"){
+            view_grade();
+            return;
+        }
     }
     
 };
@@ -458,20 +467,24 @@ class Faculty : public User
 
     void multiplexer(string line)
     {
-            if(line == "vc"){
-                view_courses();
-                return;
-            }
+        if(line == "data"){
+            dump_section(aims + "Faculty/" + id, "Data");
+            return;
+        }
+        if(line == "vc"){
+            view_courses();
+            return;
+        }
 
-            if(line == "vsc"){
-                view_students_in_course();
-                return;
-            }
+        if(line == "vsc"){
+            view_students_in_course();
+            return;
+        }
 
-            if(line == "ag"){
-                assign_grade();
-                return;
-            }
+        if(line == "ag"){
+            assign_grade();
+            return;
+        }
     }
 };
 
@@ -496,7 +509,7 @@ class Admin : public User
     public:
     Admin()
     {
-        this->id = "0";
+        this->id = "admin";
         get_value("Data", "Name", aims + "admin", this->name);
         get_value("Data", "Email", aims + "admin", this->email);
     }
@@ -504,66 +517,69 @@ class Admin : public User
 
     void multiplexer(string line)
     {
-        
-            if(line == "crs"){
-                create_student();
-                return;
-            }
-            if(line == "crf"){
-                create_faculty();
-                return;
-            }
-            if(line == "vc"){
-                view_courses();
-                return;
-            }
-            if(line == "vs"){
-                view_students();
-                return;
-            }
-            if(line == "vf"){
-                view_faculty();
-                return;
-            }
-            if(line == "crc"){
-                create_course();
-                return;
-            }
+        if(line == "data"){
+            dump_section(aims + "admin", "Data");
+            return;
+        }
+        if(line == "crs"){
+            create_student();
+            return;
+        }
+        if(line == "crf"){
+            create_faculty();
+            return;
+        }
+        if(line == "vc"){
+            view_courses();
+            return;
+        }
+        if(line == "vs"){
+            view_students();
+            return;
+        }
+        if(line == "vf"){
+            view_faculty();
+            return;
+        }
+        if(line == "crc"){
+            create_course();
+            return;
+        }
 
-            if(line == "ref"){
-                remove_faculty();
-                return;
-            }
+        if(line == "ref"){
+            remove_faculty();
+            return;
+        }
 
-            if(line == "res"){
-                remove_student();
-                return;
-            }
+        if(line == "res"){
+            remove_student();
+            return;
+        }
 
-            if(line == "rec"){
-                remove_course();
-                return;
-            }
+        if(line == "rec"){
+            remove_course();
+            return;
+        }
 
-            if(line == "asc"){
-                add_student_to_course();
-                return;
-            }
+        if(line == "asc"){
+            add_student_to_course();
+            return;
+        }
 
-            if(line == "rsc"){
-                remove_student_from_course();
-                return;
-            }
+        if(line == "rsc"){
+            remove_student_from_course();
+            return;
+        }
 
-            if(line == "afc"){
-                add_faculty_courses();
-                return;
-            }
+        if(line == "afc"){
+            add_faculty_courses();
+            return;
+        }
 
-            if(line == "rfc"){
-                remove_faculty_courses();
-                return;
-            }
+        if(line == "rfc"){
+            remove_faculty_courses();
+            return;
+        }
     }
 
 };
@@ -850,7 +866,9 @@ void Admin :: remove_course()
     string alt_fn = aims + "Students/";
     vector <string> students;
     string out = aims + "Courses/" + sem + "/" + key;
-    bool stat = dump_keys(students, "Students", out);
+    int stat = get_all_keys(students, "Students", out);
+
+    //no error checking necessary, file and section existence guaranteed
 
     for(int i = 0; i < students.size(); i++)
         set_value("Courses", key, alt_fn + students[i],"", 1);
@@ -1003,12 +1021,17 @@ void Admin :: view_courses()
     cin >> sem;
     if(sem == "all") dump_file(aims + "Courses/list");
         
-    else dump_section(aims + "Courses/list", sem);
+    else if(!dump_section(aims + "Courses/list", sem)) cout << "No such semester." << endl;
 }
 
 void Admin :: view_faculty()
 {
-    dump_section(aims + "Faculty/list", "");
+    cout << "Enter department." << endl;
+    string dep;
+    cin >> dep;
+    if(dep == "all") dump_file(aims + "Faculty/list");
+
+    else if(!dump_section(aims + "Courses/list", dep)) cout << "No such department." << endl;
 }
 
 void Admin :: view_students()
@@ -1018,7 +1041,7 @@ void Admin :: view_students()
     cin >> sem;
     if(sem == "all") dump_file(aims + "Students/list");
         
-    else dump_section(aims + "Students/list", sem);
+    else if(!dump_section(aims + "Courses/list", sem)) cout << "No such semester." << endl;
 }
 
 
@@ -1066,7 +1089,9 @@ void Student :: dereg_course()
     cin >> cr_id;
 
     string tmp;
-    if(get_value("Courses", cr_id, aims + "Students/" + id, tmp) == 1){
+    int status = get_value("Courses", cr_id, aims + "Students/" + id, tmp);
+    
+    if(status == 1){
         cout << "No such course registered.";
         return;
     }
@@ -1171,7 +1196,7 @@ int main()
     while(cout << "\n\n>>> " && cin >> line){
         //termination command
         if(line == "exit"){
-            delete current_user;
+            if(usr_stat != -1) delete current_user;
             return 0;
         }
 
@@ -1236,6 +1261,10 @@ int main()
             continue;
         }
 
+        if(line == "data"){
+            current_user->multiplexer(line);
+            continue;
+        }
         //checks for existence of commands
         string cmd;
         if(line.length() > 3){
@@ -1248,7 +1277,7 @@ int main()
         }
         else{
             if(get_value(to_string(usr_stat), line, aims + "commands", cmd) == 1){
-                cout << "Invalid command." << endl;
+                cout << line << "Invalid command." << endl;
                 continue;
             }
         }

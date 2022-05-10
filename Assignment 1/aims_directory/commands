@@ -3,7 +3,9 @@
 > help : Display commands.
 > logout : Log out of current user. Requires prior login.
 > ch : change current user's password. Requires logged in user.
+> data : views data of current user.
 > exit : terminates program.
+
 [0]
 > crs : create_student 
 > res : remove_student
@@ -18,10 +20,12 @@
 > vc : view_all_courses
 > vs : view_all_students
 > vf : view_all_faculty
+
 [1]
 > vc : view_courses
 > vsc : view_students_in_course
 > ag : assign_grades
+
 [2]
 > rg : register
 > drg : deregister
