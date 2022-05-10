@@ -401,13 +401,13 @@ class User
 
 class Student : public User
 {
-    public:
     int current_sem;
     void reg_course();//-1 if no such course exists.
     void dereg_course();
     void view_all_courses();
     void view_grade(); //-1 if no such course registered
 
+    public:
     Student(string &in_id){
         this->id = in_id;
         string dummy;
